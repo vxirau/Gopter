@@ -11,13 +11,13 @@ SDA -- A4
 
 */
 
-double accelX,accelY,accelZ,temperature,gyroX,gyroY,gyroZ,gyro_x_cal,gyro_y_cal,gyro_z_cal; //These will be the raw data from the MPU6050.
-double gyro_roll_input, gyro_pitch_input, gyro_yaw_input; //These are the angle calculations from the gyro.
-double angle_pitch, angle_roll; //These are the angle calculations from the accelerometer.
+double accelX,accelY,accelZ,temperature,gyroX,gyroY,gyroZ,gyro_x_cal,gyro_y_cal,gyro_z_cal; //Data que treguem de la IMU
+double gyro_roll_input, gyro_pitch_input, gyro_yaw_input; //Els angles que extraiem del giroscopi, inputs del PID
+double angle_pitch, angle_roll; //Els angles que extraiem del accelerometre, inputs del PID
 uint32_t timer;
 double acc_total_vector, angle_pitch_acc, angle_roll_acc, pitch_level_adjust, roll_level_adjust;
 unsigned long loop_timer;
-double roll, pitch ,yaw; //These are the angles in the complementary filter
+double roll, pitch ,yaw;
 float rollangle,pitchangle;
 int cal_int;
 
@@ -44,14 +44,12 @@ void setup() {
   timer = micros();
 }
 
-
 /*
-
 X - ROLL
 Y - PITCH
 Z - YAW
-
 */
+
 void loop() {
   recordRegisters();
 
