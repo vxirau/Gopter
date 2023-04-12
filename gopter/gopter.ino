@@ -95,17 +95,17 @@ Z - YAW
 void loop() {
   recordRegisters();
 
-  gyro_roll_input = (gyro_roll_input * 0.7) + ((gyroX / 65.5) * 0.3);   //Gyro pid input is deg/sec.
-  gyro_pitch_input = (gyro_pitch_input * 0.7) + ((gyroY / 65.5) * 0.3);//Gyro pid input is deg/sec.
+  gyro_roll_input = (gyro_roll_input * 0.7) + ((gyroX / 65.5) * 0.3);    //Gyro pid input is deg/sec.
+  gyro_pitch_input = (gyro_pitch_input * 0.7) + ((gyroY / 65.5) * 0.3);  //Gyro pid input is deg/sec.
   gyro_yaw_input = (gyro_yaw_input * 0.7) + ((gyroZ / 65.5) * 0.3);      //Gyro pid input is deg/sec.
 
   
-  //Gyro angle calculations
+
   //0.0000611 = 1 / (250Hz / 65.5)
   angle_pitch += gyroY * 0.0000611;                                    //Calculate the traveled pitch angle and add this to the angle_pitch variable.
   angle_roll += gyroX * 0.0000611;                                      //Calculate the traveled roll angle and add this to the angle_roll variable.
 
-  //0.000001066 = 0.0000611 * (3.142(PI) / 180degr) The Arduino sin function is in radians
+  //0.000001066 = 0.0000611 * (3.142(PI) / 180degr)                     The Arduino sin function is in radians
   angle_pitch -= angle_roll * sin(gyroZ * 0.000001066);                  //If the IMU has yawed transfer the roll angle to the pitch angel.
   angle_roll += angle_pitch * sin(gyroZ * 0.000001066);                  //If the IMU has yawed transfer the pitch angle to the roll angel.
 
@@ -181,8 +181,6 @@ void loop() {
   }
   
   calculate_pid();   
-
-
 
   battery_voltage = battery_voltage * 0.92 + (analogRead(0) + 65) * 0.09853;
 
