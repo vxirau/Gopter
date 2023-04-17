@@ -73,7 +73,7 @@ void loop(){
     Serial.println(F("I2C clock speed is not set to 400kHz. (ERROR 8)"));
     error = 1;
   }
-  
+  /*
   if(error == 0){
     Serial.println(F(""));
     Serial.println(F("==================================================="));
@@ -194,7 +194,7 @@ void loop(){
     Serial.println(high_channel_4);
     Serial.println(F("Move stick 'nose up' and back to center to continue"));
     check_to_continue();
-  }
+  }*/
     
   if(error == 0){
     //What gyro is connected

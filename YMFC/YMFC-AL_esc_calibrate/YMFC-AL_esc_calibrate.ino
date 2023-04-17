@@ -60,6 +60,8 @@ void setup(){
   Wire.begin();                                                                         //Start the wire library as master
   TWBR = 12;                                                                            //Set the I2C clock speed to 400kHz.
 
+  Serial.println("SERIAL SEND");
+
   //Arduino Uno pins default to inputs, so they don't need to be explicitly declared as inputs.
   DDRD |= B11110000;                                                                    //Configure digital poort 4, 5, 6 and 7 as output.
   DDRB |= B00010000;                                                                    //Configure digital poort 12 as output.
@@ -75,6 +77,8 @@ void setup(){
   gyro_address = eeprom_data[32];                                                       //Store the gyro address in the variable.
 
   set_gyro_registers();                                                                 //Set the specific gyro registers.
+
+  Serial.println("PRE EEPROM");
 
   //Check the EEPROM signature to make sure that the setup program is executed.
   while(eeprom_data[33] != 'J' || eeprom_data[34] != 'M' || eeprom_data[35] != 'B'){
@@ -359,6 +363,7 @@ ISR(PCINT0_vect){
 //Checck if the receiver values are valid within 10 seconds
 void wait_for_receiver(){
   byte zero = 0;                                                                //Set all bits in the variable zero to 0
+  Serial.println("Hello");
   while(zero < 15){                                                             //Stay in this loop until the 4 lowest bits are set
     if(receiver_input[1] < 2100 && receiver_input[1] > 900)zero |= 0b00000001;  //Set bit 0 if the receiver pulse 1 is within the 900 - 2100 range
     if(receiver_input[2] < 2100 && receiver_input[2] > 900)zero |= 0b00000010;  //Set bit 1 if the receiver pulse 2 is within the 900 - 2100 range
@@ -366,6 +371,7 @@ void wait_for_receiver(){
     if(receiver_input[4] < 2100 && receiver_input[4] > 900)zero |= 0b00001000;  //Set bit 3 if the receiver pulse 4 is within the 900 - 2100 range
     delay(500);                                                                 //Wait 500 milliseconds
   }
+  Serial.println("Goodbye");
 }
 
 //This part converts the actual receiver signals to a standardized 1000 – 1500 – 2000 microsecond value.

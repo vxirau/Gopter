@@ -27,6 +27,7 @@ float pid_d_gain_yaw = 0.0;                //Gain setting for the pitch D-contro
 int pid_max_yaw = 400;                     //Maximum output of the PID-controller (+/-)
 
 int esc_1, esc_2, esc_3, esc_4;
+int aux=0;
 
 double accelX,accelY,accelZ,temperature,gyroX,gyroY,gyroZ,gyro_x_cal,gyro_y_cal,gyro_z_cal; //Data que treguem de la IMU
 double gyro_roll_input, gyro_pitch_input, gyro_yaw_input; //Els angles que extraiem del giroscopi, inputs del PID
@@ -46,6 +47,7 @@ float pid_i_mem_yaw, pid_yaw_setpoint, pid_output_yaw, pid_last_yaw_d_error;
 volatile int receiver_input_channel_1, receiver_input_channel_2, receiver_input_channel_3, receiver_input_channel_4;
 
 int throttle, battery_voltage;
+unsigned long timer_channel_1, timer_channel_2, timer_channel_3, timer_channel_4, esc_loop_timer;
 
 
 
@@ -69,6 +71,11 @@ void setup() {
   gyro_y_cal /= 2000;
   gyro_z_cal /= 2000;
   start = 0;
+  
+  esc_1 = 2000;
+  esc_2 = 2000;
+  esc_3 = 2000;
+  esc_4 = 2000;
   
   //start a timer
   timer = micros();
@@ -135,6 +142,7 @@ void loop() {
 
   if(start == 1){
     start = 2;
+    tiempoInicio = micros();
 
     angle_pitch = angle_pitch_acc;                                          //Set the gyro pitch angle equal to the accelerometer pitch angle when the quadcopter is started.
     angle_roll = angle_roll_acc;                                            //Set the gyro roll angle equal to the accelerometer roll angle when the quadcopter is started.
@@ -149,7 +157,7 @@ void loop() {
     pid_last_yaw_d_error = 0;
 
   }
-
+  
   //The PID set point in degrees per second is determined by the roll receiver input.
   //In the case of deviding by 3 the max roll rate is aprox 164 degrees per second ( (500-8)/3 = 164d/s ).
   pid_roll_setpoint = 0;
@@ -191,7 +199,67 @@ void loop() {
 
   throttle = receiver_input_channel_3;       
   
-  if(start == 2){
+  if(start == 2){ 
+    throttle = 2000;
+    esc_1 = 2000;
+    esc_2 = 2000;
+    esc_3 = 2000;
+    esc_4 = 2000;
+  
+    if(micros() - tiempoInicio > 2000000){
+      start=3;
+      tiempoInicio = micros();
+    }
+
+  }
+
+  if(start == 3){
+    if(esc_1 > 1000){
+      esc_1 = esc_1 - 10;
+    }
+     if(esc_2 > 1000){
+      esc_2 = esc_2 - 10;
+    }
+     if(esc_3 > 1000){
+      esc_3 = esc_3 - 10;
+    }
+     if(esc_4 > 1000){
+      esc_4 = esc_4 - 10;
+    }
+    
+    if(aux == 0){
+      if(esc_1 == 1000 && esc_2 == 1000 && esc_3 == 1000 && esc_4 == 1000){
+        tiempoInicio = micros();
+        aux = 1;
+      }
+    }else{
+      if(micros() - tiempoInicio > 2000000){
+        start=4;
+        tiempoInicio = micros();
+      }
+    }
+    
+    
+   }
+
+  if(start == 4){
+    if(esc_1 < 1500){
+      esc_1 = esc_1 + 10;
+    }
+     if(esc_2 < 1500){
+      esc_2 = esc_2 + 10;
+    }
+     if(esc_3 < 1500){
+      esc_3 = esc_3 + 10;
+    }
+     if(esc_4 < 1500){
+      esc_4 = esc_4 + 10;
+    }
+  }
+
+
+
+  if(start == 5){
    if (throttle > 1800) throttle = 1800;                                   //We need some room to keep full control at full throttle.
     esc_1 = throttle - pid_output_pitch + pid_output_roll - pid_output_yaw; //Calculate the pulse for esc 1 (front-right - CCW)
     esc_2 = throttle + pid_output_pitch + pid_output_roll + pid_output_yaw; //Calculate the pulse for esc 2 (rear-right - CW)
@@ -214,12 +282,12 @@ void loop() {
     if(esc_2 > 2000)esc_2 = 2000;                                           //Limit the esc-2 pulse to 2000us.
     if(esc_3 > 2000)esc_3 = 2000;                                           //Limit the esc-3 pulse to 2000us.
     if(esc_4 > 2000)esc_4 = 2000;                                           //Limit the esc-4 pulse to 2000us.  
-  } else{
+  } /*else{
     esc_1 = 1000;                                                           //If start is not 2 keep a 1000us pulse for ess-1.
     esc_2 = 1000;                                                           //If start is not 2 keep a 1000us pulse for ess-2.
     esc_3 = 1000;                                                           //If start is not 2 keep a 1000us pulse for ess-3.
     esc_4 = 1000;                                                           //If start is not 2 keep a 1000us pulse for ess-4.
-  }                       
+  }              */         
 
 
 
@@ -227,14 +295,29 @@ void loop() {
   Serial.print("BATTERY_VOLTAGE:");
   Serial.print(battery_voltage);
   Serial.print(",");
-  Serial.print("PID_OUTPUT_PITCH:");
+  Serial.print("START:");
+  Serial.print(start);
+  /*Serial.print("PID_OUTPUT_PITCH:");
   Serial.print(pid_output_pitch);
   Serial.print(",");
   Serial.print("PID_OUTPUT_ROLL:");
   Serial.print(pid_output_roll);
   Serial.print(",");
   Serial.print("PID_OUTPUT_YAW:");
-  Serial.println(pid_output_yaw);
+  Serial.print(pid_output_yaw);
+  Serial.print(",");*/
+   Serial.print(",");
+  Serial.print("EC1:");
+  Serial.print(esc_1);
+  Serial.print(",");
+  Serial.print("EC2:");
+  Serial.print(esc_2);
+  Serial.print(",");
+  Serial.print("EC3:");
+  Serial.print(esc_3);
+  Serial.print(",");
+  Serial.print("EC4:");
+  Serial.println(esc_4);
 
   //! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
   //Because of the angle calculation the loop time is getting very important. If the loop time is 
@@ -245,14 +328,14 @@ void loop() {
     
   //if(micros() - loop_timer > 4050)digitalWrite(12, HIGH);                   //Turn on the LED if the loop time exceeds 4050us.
 
-  while(micros() - loop_timer < 4000);                                      //We wait until 4000us are passed.
+  while(micros() - loop_timer < 20000);                                      //We wait until 4000us are passed.
     loop_timer = micros();                                                    //Set the timer for the next loop.
   
    PORTD |= B11110000;                                                       //Set digital outputs 4,5,6 and 7 high.
-  timer_channel_1 = esc_1 + loop_timer;                                     //Calculate the time of the faling edge of the esc-1 pulse.
-  timer_channel_2 = esc_2 + loop_timer;                                     //Calculate the time of the faling edge of the esc-2 pulse.
-  timer_channel_3 = esc_3 + loop_timer;                                     //Calculate the time of the faling edge of the esc-3 pulse.
-  timer_channel_4 = esc_4 + loop_timer;                                     //Calculate the time of the faling edge of the esc-4 pulse.
+  timer_channel_1 = esc_1 + loop_timer-100;                                     //Calculate the time of the faling edge of the esc-1 pulse.
+  timer_channel_2 = esc_2 + loop_timer-100;                                     //Calculate the time of the faling edge of the esc-2 pulse.
+  timer_channel_3 = esc_3 + loop_timer-100;                                     //Calculate the time of the faling edge of the esc-3 pulse.
+  timer_channel_4 = esc_4 + loop_timer-100;                                     //Calculate the time of the faling edge of the esc-4 pulse.
   
   while(PORTD >= 16){                                                       //Stay in this loop until output 4,5,6 and 7 are low.
     esc_loop_timer = micros();                                              //Read the current time.

@@ -24,6 +24,7 @@ byte lowByte, highByte, type, gyro_address, error, clockspeed_ok;
 byte channel_1_assign, channel_2_assign, channel_3_assign, channel_4_assign;
 byte roll_axis, pitch_axis, yaw_axis;
 byte receiver_check_byte, gyro_check_byte;
+unsigned long timer_channel_1, timer_channel_2, timer_channel_3, timer_channel_4;
 volatile int receiver_input_channel_1, receiver_input_channel_2, receiver_input_channel_3, receiver_input_channel_4;
 int center_channel_1, center_channel_2, center_channel_3, center_channel_4;
 int high_channel_1, high_channel_2, high_channel_3, high_channel_4;
