@@ -49,7 +49,10 @@ volatile int receiver_input_channel_1, receiver_input_channel_2, receiver_input_
 int throttle, battery_voltage;
 unsigned long timer_channel_1, timer_channel_2, timer_channel_3, timer_channel_4, esc_loop_timer;
 
-
+int outputPin1 = 4; // PWM output pin
+int outputPin2 = 5; // PWM output pin
+int outputPin3 = 6; // PWM output pin
+int outputPin4 = 7; // PWM output pin
 
 
 
@@ -57,7 +60,7 @@ void setup() {
   Serial.begin(115200);
   Wire.begin();
 
-  setupMPU();   
+  setupMPU();   /*
   Serial.println("Calibrating Gyroscope......");
   for(cal_int=1;cal_int<=2000;cal_int++)
   { 
@@ -66,6 +69,7 @@ void setup() {
    gyro_y_cal  += gyroY ;
    gyro_z_cal += gyroZ;
   }
+  */
   Serial.println("Calibration Done..!!!");
   gyro_x_cal /= 2000;
   gyro_y_cal /= 2000;
@@ -81,6 +85,10 @@ void setup() {
   timer = micros();
   tiempoInicio = micros();
 
+  pinMode(outputPin1, OUTPUT);
+  pinMode(outputPin2, OUTPUT);
+  pinMode(outputPin3, OUTPUT);
+  pinMode(outputPin4, OUTPUT);
 
   //Load the battery voltage to the battery_voltage variable.
   //65 is the voltage compensation for the diode.
@@ -206,7 +214,7 @@ void loop() {
     esc_3 = 2000;
     esc_4 = 2000;
   
-    if(micros() - tiempoInicio > 2000000){
+    if(micros() - tiempoInicio > 100000){
       start=3;
       tiempoInicio = micros();
     }
@@ -215,16 +223,16 @@ void loop() {
 
   if(start == 3){
     if(esc_1 > 1000){
-      esc_1 = esc_1 - 10;
+      esc_1 = esc_1 - 100;
     }
      if(esc_2 > 1000){
-      esc_2 = esc_2 - 10;
+      esc_2 = esc_2 - 100;
     }
      if(esc_3 > 1000){
-      esc_3 = esc_3 - 10;
+      esc_3 = esc_3 - 100;
     }
      if(esc_4 > 1000){
-      esc_4 = esc_4 - 10;
+      esc_4 = esc_4 - 100;
     }
     
     if(aux == 0){
@@ -328,10 +336,15 @@ void loop() {
     
   //if(micros() - loop_timer > 4050)digitalWrite(12, HIGH);                   //Turn on the LED if the loop time exceeds 4050us.
 
-  while(micros() - loop_timer < 20000);                                      //We wait until 4000us are passed.
+  while(micros() - loop_timer < 20700);                                      //We wait until 4000us are passed.
     loop_timer = micros();                                                    //Set the timer for the next loop.
   
-   PORTD |= B11110000;                                                       //Set digital outputs 4,5,6 and 7 high.
+  digitalWrite(4, HIGH);
+  digitalWrite(5, HIGH);
+  digitalWrite(6, HIGH);
+  digitalWrite(7, HIGH);
+  
+  PORTD |= B11110000;                                                       //Set digital outputs 4,5,6 and 7 high.
   timer_channel_1 = esc_1 + loop_timer-100;                                     //Calculate the time of the faling edge of the esc-1 pulse.
   timer_channel_2 = esc_2 + loop_timer-100;                                     //Calculate the time of the faling edge of the esc-2 pulse.
   timer_channel_3 = esc_3 + loop_timer-100;                                     //Calculate the time of the faling edge of the esc-3 pulse.
@@ -339,10 +352,10 @@ void loop() {
   
   while(PORTD >= 16){                                                       //Stay in this loop until output 4,5,6 and 7 are low.
     esc_loop_timer = micros();                                              //Read the current time.
-    if(timer_channel_1 <= esc_loop_timer)PORTD &= B11101111;                //Set digital output 4 to low if the time is expired.
-    if(timer_channel_2 <= esc_loop_timer)PORTD &= B11011111;                //Set digital output 5 to low if the time is expired.
-    if(timer_channel_3 <= esc_loop_timer)PORTD &= B10111111;                //Set digital output 6 to low if the time is expired.
-    if(timer_channel_4 <= esc_loop_timer)PORTD &= B01111111;                //Set digital output 7 to low if the time is expired.
+    if(timer_channel_1 <= esc_loop_timer)digitalWrite(4, LOW);                //Set digital output 4 to low if the time is expired.
+    if(timer_channel_2 <= esc_loop_timer)digitalWrite(5, LOW);                //Set digital output 5 to low if the time is expired.
+    if(timer_channel_3 <= esc_loop_timer)digitalWrite(6, LOW);                //Set digital output 6 to low if the time is expired.
+    if(timer_channel_4 <= esc_loop_timer)digitalWrite(7, LOW);                //Set digital output 7 to low if the time is expired.
   }
 
 }
