@@ -168,6 +168,7 @@ void loop(){
   gyro_pitch_input = (gyro_pitch_input * 0.7) + ((gyro_pitch / 65.5) * 0.3);//Gyro pid input is deg/sec.
   gyro_yaw_input = (gyro_yaw_input * 0.7) + ((gyro_yaw / 65.5) * 0.3);      //Gyro pid input is deg/sec.
 
+  
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////
   //This is the added IMU code from the videos:
@@ -429,6 +430,7 @@ void gyro_signalen(){
     gyro_axis[2] -= gyro_axis_cal[2];                                       //Only compensate after the calibration.
     gyro_axis[3] -= gyro_axis_cal[3];                                       //Only compensate after the calibration.
   }
+
   gyro_roll = gyro_axis[eeprom_data[28] & 0b00000011];                      //Set gyro_roll to the correct axis that was stored in the EEPROM.
   if(eeprom_data[28] & 0b10000000)gyro_roll *= -1;                          //Invert gyro_roll if the MSB of EEPROM bit 28 is set.
   gyro_pitch = gyro_axis[eeprom_data[29] & 0b00000011];                     //Set gyro_pitch to the correct axis that was stored in the EEPROM.

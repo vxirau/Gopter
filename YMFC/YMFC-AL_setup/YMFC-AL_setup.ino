@@ -196,7 +196,6 @@ void loop(){
     check_to_continue();
   }*/
     
-  if(error == 0){
     //What gyro is connected
     Serial.println(F(""));
     Serial.println(F("==================================================="));
@@ -206,7 +205,7 @@ void loop(){
     
     Serial.println(F("Searching for MPU-6050 on address 0x68/104"));
     delay(1000);
-    if(search_gyro(0x68, 0x75) == 0x68){
+    /*if(search_gyro(0x68, 0x75) == 0x68){
       Serial.println(F("MPU-6050 found on address 0x68"));
       type = 1;
       gyro_address = 0x68;
@@ -265,17 +264,21 @@ void loop(){
     if(type == 0){
       Serial.println(F("No gyro device found!!! (ERROR 3)"));
       error = 1;
-    }
+    }*/
     
-    else{
+    Serial.println("Search: " + search_gyro(0b1101000, 0x3B));
+    type = 1;
+    gyro_address = 0b1101000;
+    
+    //else{
       delay(3000);
       Serial.println(F(""));
       Serial.println(F("==================================================="));
       Serial.println(F("Gyro register settings"));
       Serial.println(F("==================================================="));
       start_gyro(); //Setup the gyro for further use
-    }
-  }
+    
+  
   
   //If the gyro is found we can setup the correct gyro axes.
   if(error == 0){
@@ -384,13 +387,14 @@ void loop(){
     Serial.println(F("Final setup check"));
     Serial.println(F("==================================================="));
     delay(1000);
+    /*
     if(receiver_check_byte == 0b00001111){
       Serial.println(F("Receiver channels ok"));
     }
     else{
       Serial.println(F("Receiver channel verification failed!!! (ERROR 6)"));
       error = 1;
-    }
+    }*/
     delay(1000);
     if(gyro_check_byte == 0b00000111){
       Serial.println(F("Gyro axes ok"));
@@ -410,34 +414,34 @@ void loop(){
     Serial.println(F("Writing EEPROM"));
     delay(1000);
     Serial.println(F("Done!"));
-    EEPROM.write(0, center_channel_1 & 0b11111111);
-    EEPROM.write(1, center_channel_1 >> 8);
-    EEPROM.write(2, center_channel_2 & 0b11111111);
-    EEPROM.write(3, center_channel_2 >> 8);
-    EEPROM.write(4, center_channel_3 & 0b11111111);
-    EEPROM.write(5, center_channel_3 >> 8);
-    EEPROM.write(6, center_channel_4 & 0b11111111);
-    EEPROM.write(7, center_channel_4 >> 8);
-    EEPROM.write(8, high_channel_1 & 0b11111111);
-    EEPROM.write(9, high_channel_1 >> 8);
-    EEPROM.write(10, high_channel_2 & 0b11111111);
-    EEPROM.write(11, high_channel_2 >> 8);
-    EEPROM.write(12, high_channel_3 & 0b11111111);
-    EEPROM.write(13, high_channel_3 >> 8);
-    EEPROM.write(14, high_channel_4 & 0b11111111);
-    EEPROM.write(15, high_channel_4 >> 8);
-    EEPROM.write(16, low_channel_1 & 0b11111111);
-    EEPROM.write(17, low_channel_1 >> 8);
-    EEPROM.write(18, low_channel_2 & 0b11111111);
-    EEPROM.write(19, low_channel_2 >> 8);
-    EEPROM.write(20, low_channel_3 & 0b11111111);
-    EEPROM.write(21, low_channel_3 >> 8);
-    EEPROM.write(22, low_channel_4 & 0b11111111);
-    EEPROM.write(23, low_channel_4 >> 8);
-    EEPROM.write(24, channel_1_assign);
-    EEPROM.write(25, channel_2_assign);
-    EEPROM.write(26, channel_3_assign);
-    EEPROM.write(27, channel_4_assign);
+    // EEPROM.write(0, center_channel_1 & 0b11111111);
+    // EEPROM.write(1, center_channel_1 >> 8);
+    // EEPROM.write(2, center_channel_2 & 0b11111111);
+    // EEPROM.write(3, center_channel_2 >> 8);
+    // EEPROM.write(4, center_channel_3 & 0b11111111);
+    // EEPROM.write(5, center_channel_3 >> 8);
+    // EEPROM.write(6, center_channel_4 & 0b11111111);
+    // EEPROM.write(7, center_channel_4 >> 8);
+    // EEPROM.write(8, high_channel_1 & 0b11111111);
+    // EEPROM.write(9, high_channel_1 >> 8);
+    // EEPROM.write(10, high_channel_2 & 0b11111111);
+    // EEPROM.write(11, high_channel_2 >> 8);
+    // EEPROM.write(12, high_channel_3 & 0b11111111);
+    // EEPROM.write(13, high_channel_3 >> 8);
+    // EEPROM.write(14, high_channel_4 & 0b11111111);
+    // EEPROM.write(15, high_channel_4 >> 8);
+    // EEPROM.write(16, low_channel_1 & 0b11111111);
+    // EEPROM.write(17, low_channel_1 >> 8);
+    // EEPROM.write(18, low_channel_2 & 0b11111111);
+    // EEPROM.write(19, low_channel_2 >> 8);
+    // EEPROM.write(20, low_channel_3 & 0b11111111);
+    // EEPROM.write(21, low_channel_3 >> 8);
+    // EEPROM.write(22, low_channel_4 & 0b11111111);
+    // EEPROM.write(23, low_channel_4 >> 8);
+    // EEPROM.write(24, channel_1_assign);
+    // EEPROM.write(25, channel_2_assign);
+    // EEPROM.write(26, channel_3_assign);
+    // EEPROM.write(27, channel_4_assign);
     EEPROM.write(28, roll_axis);
     EEPROM.write(29, pitch_axis);
     EEPROM.write(30, yaw_axis);
@@ -452,25 +456,25 @@ void loop(){
     //To make sure evrything is ok, verify the EEPROM data.
     Serial.println(F("Verify EEPROM data"));
     delay(1000);
-    if(center_channel_1 != ((EEPROM.read(1) << 8) | EEPROM.read(0)))error = 1;
-    if(center_channel_2 != ((EEPROM.read(3) << 8) | EEPROM.read(2)))error = 1;
-    if(center_channel_3 != ((EEPROM.read(5) << 8) | EEPROM.read(4)))error = 1;
-    if(center_channel_4 != ((EEPROM.read(7) << 8) | EEPROM.read(6)))error = 1;
+    // if(center_channel_1 != ((EEPROM.read(1) << 8) | EEPROM.read(0)))error = 1;
+    // if(center_channel_2 != ((EEPROM.read(3) << 8) | EEPROM.read(2)))error = 1;
+    // if(center_channel_3 != ((EEPROM.read(5) << 8) | EEPROM.read(4)))error = 1;
+    // if(center_channel_4 != ((EEPROM.read(7) << 8) | EEPROM.read(6)))error = 1;
     
-    if(high_channel_1 != ((EEPROM.read(9) << 8) | EEPROM.read(8)))error = 1;
-    if(high_channel_2 != ((EEPROM.read(11) << 8) | EEPROM.read(10)))error = 1;
-    if(high_channel_3 != ((EEPROM.read(13) << 8) | EEPROM.read(12)))error = 1;
-    if(high_channel_4 != ((EEPROM.read(15) << 8) | EEPROM.read(14)))error = 1;
+    // if(high_channel_1 != ((EEPROM.read(9) << 8) | EEPROM.read(8)))error = 1;
+    // if(high_channel_2 != ((EEPROM.read(11) << 8) | EEPROM.read(10)))error = 1;
+    // if(high_channel_3 != ((EEPROM.read(13) << 8) | EEPROM.read(12)))error = 1;
+    // if(high_channel_4 != ((EEPROM.read(15) << 8) | EEPROM.read(14)))error = 1;
     
-    if(low_channel_1 != ((EEPROM.read(17) << 8) | EEPROM.read(16)))error = 1;
-    if(low_channel_2 != ((EEPROM.read(19) << 8) | EEPROM.read(18)))error = 1;
-    if(low_channel_3 != ((EEPROM.read(21) << 8) | EEPROM.read(20)))error = 1;
-    if(low_channel_4 != ((EEPROM.read(23) << 8) | EEPROM.read(22)))error = 1;
+    // if(low_channel_1 != ((EEPROM.read(17) << 8) | EEPROM.read(16)))error = 1;
+    // if(low_channel_2 != ((EEPROM.read(19) << 8) | EEPROM.read(18)))error = 1;
+    // if(low_channel_3 != ((EEPROM.read(21) << 8) | EEPROM.read(20)))error = 1;
+    // if(low_channel_4 != ((EEPROM.read(23) << 8) | EEPROM.read(22)))error = 1;
     
-    if(channel_1_assign != EEPROM.read(24))error = 1;
-    if(channel_2_assign != EEPROM.read(25))error = 1;
-    if(channel_3_assign != EEPROM.read(26))error = 1;
-    if(channel_4_assign != EEPROM.read(27))error = 1;
+    // if(channel_1_assign != EEPROM.read(24))error = 1;
+    // if(channel_2_assign != EEPROM.read(25))error = 1;
+    // if(channel_3_assign != EEPROM.read(26))error = 1;
+    // if(channel_4_assign != EEPROM.read(27))error = 1;
     
     if(roll_axis != EEPROM.read(28))error = 1;
     if(pitch_axis != EEPROM.read(29))error = 1;
@@ -504,7 +508,7 @@ byte search_gyro(int gyro_address, int who_am_i){
   Wire.beginTransmission(gyro_address);
   Wire.write(who_am_i);
   Wire.endTransmission();
-  Wire.requestFrom(gyro_address, 1);
+  Wire.requestFrom(gyro_address, 14);
   timer = millis() + 100;
   while(Wire.available() < 1 && timer > millis());
   lowByte = Wire.read();
@@ -663,7 +667,8 @@ void check_receiver_inputs(byte movement){
 }
 
 void check_to_continue(){
-  byte continue_byte = 0;
+  /*
+   byte continue_byte = 0;
   while(continue_byte == 0){
     if(channel_2_assign == 0b00000001 && receiver_input_channel_1 > center_channel_1 + 150)continue_byte = 1;
     if(channel_2_assign == 0b10000001 && receiver_input_channel_1 < center_channel_1 - 150)continue_byte = 1;
@@ -676,6 +681,17 @@ void check_to_continue(){
     delay(100);
   }
   wait_sticks_zero();
+  */
+
+  Serial.println(F("Press 'c' to continue"));
+  int accept=0;
+  while(!accept) {
+     char inByte = Serial.read();
+    if(inByte == 'c'){
+      accept = 1;
+    }
+  }
+
 }
 
 //Check if the transmitter sticks are in the neutral position

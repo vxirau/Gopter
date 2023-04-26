@@ -1,4 +1,5 @@
 #include <Wire.h>
+#include <EEPROM.h>                        //Include the EEPROM.h library so we can store information onto the EEPROM
 
 
 /*
@@ -28,12 +29,14 @@ int pid_max_yaw = 400;                     //Maximum output of the PID-controlle
 
 int esc_1, esc_2, esc_3, esc_4;
 int aux=0;
+int acc_axis[4], gyro_axis[4];
+
 
 double accelX,accelY,accelZ,temperature,gyroX,gyroY,gyroZ,gyro_x_cal,gyro_y_cal,gyro_z_cal; //Data que treguem de la IMU
 double gyro_roll_input, gyro_pitch_input, gyro_yaw_input; //Els angles que extraiem del giroscopi, inputs del PID
 double angle_pitch, angle_roll; //Els angles que extraiem del accelerometre, inputs del PID
 uint32_t timer;
-double acc_total_vector, angle_pitch_acc, angle_roll_acc, pitch_level_adjust, roll_level_adjust;
+double angle_pitch_acc, angle_roll_acc, pitch_level_adjust, roll_level_adjust;
 unsigned long loop_timer,tiempoInicio;
 double roll, pitch ,yaw;
 float rollangle,pitchangle;
@@ -43,6 +46,11 @@ float pid_error_temp;
 float pid_i_mem_roll, pid_roll_setpoint, pid_output_roll, pid_last_roll_d_error;
 float pid_i_mem_pitch, pid_pitch_setpoint, pid_output_pitch, pid_last_pitch_d_error;
 float pid_i_mem_yaw, pid_yaw_setpoint, pid_output_yaw, pid_last_yaw_d_error;
+int gyro_address;
+double gyro_axis_cal[4];
+long acc_x, acc_y, acc_z, acc_total_vector;
+
+double gyro_pitch, gyro_roll, gyro_yaw;
 //float angle_roll_acc, angle_pitch_acc, angle_pitch, angle_roll;
 volatile int receiver_input_channel_1, receiver_input_channel_2, receiver_input_channel_3, receiver_input_channel_4;
 
@@ -54,6 +62,11 @@ int outputPin2 = 5; // PWM output pin
 int outputPin3 = 6; // PWM output pin
 int outputPin4 = 7; // PWM output pin
 
+
+
+
+byte eeprom_data[36];
+
 boolean auto_level = true;                 //Auto level on (true) or off (false)
 
 
@@ -61,6 +74,7 @@ void setup() {
   Serial.begin(115200);
   Wire.begin();
 
+ 
   setupMPU();   
   
   start = 0;
@@ -99,28 +113,27 @@ Z - YAW
 void loop() {
   recordRegisters();
 
-  gyro_roll_input = (gyro_roll_input * 0.7) + ((gyroX / 65.5) * 0.3);    //Gyro pid input is deg/sec.
-  gyro_pitch_input = (gyro_pitch_input * 0.7) + ((gyroY / 65.5) * 0.3);  //Gyro pid input is deg/sec.
-  gyro_yaw_input = (gyro_yaw_input * 0.7) + ((gyroZ / 65.5) * 0.3);      //Gyro pid input is deg/sec.
+  gyro_roll_input = (gyro_roll_input * 0.7) + ((gyro_roll / 65.5) * 0.3) ;   //Gyro pid input is deg/sec.
+  gyro_pitch_input = (gyro_pitch_input * 0.7) + ((gyro_pitch / 65.5) * 0.3);//Gyro pid input is deg/sec.
+  gyro_yaw_input = (gyro_yaw_input * 0.7) + ((gyro_yaw / 65.5) * 0.3);      //Gyro pid input is deg/sec.
 
-  
 
   //0.0000611 = 1 / (250Hz / 65.5)
-  angle_pitch += gyroY * 0.0000611;                                    //Calculate the traveled pitch angle and add this to the angle_pitch variable.
-  angle_roll += gyroX * 0.0000611;                                      //Calculate the traveled roll angle and add this to the angle_roll variable.
+  angle_pitch += gyro_pitch * 0.0000611;                                    //Calculate the traveled pitch angle and add this to the angle_pitch variable.
+  angle_roll += gyro_roll * 0.0000611;                                      //Calculate the traveled roll angle and add this to the angle_roll variable.
 
   //0.000001066 = 0.0000611 * (3.142(PI) / 180degr)                     The Arduino sin function is in radians
-  angle_pitch -= angle_roll * sin(gyroZ * 0.000001066);                  //If the IMU has yawed transfer the roll angle to the pitch angel.
-  angle_roll += angle_pitch * sin(gyroZ * 0.000001066);                  //If the IMU has yawed transfer the pitch angle to the roll angel.
+  angle_pitch -= angle_roll * sin(gyro_yaw * 0.000001066);                  //If the IMU has yawed transfer the roll angle to the pitch angel.
+  angle_roll += angle_pitch * sin(gyro_yaw * 0.000001066);                  //If the IMU has yawed transfer the pitch angle to the roll angel.
 
 
-  acc_total_vector = sqrt((accelX*accelX)+(accelY*accelY)+(accelZ*accelZ));       //Calculate the total accelerometer vector.
+  acc_total_vector = sqrt((acc_x*acc_x)+(acc_y*acc_y)+(acc_z*acc_z));       //Calculate the total accelerometer vector.
   
-  if(abs(accelY) < acc_total_vector){                                        //Prevent the asin function to produce a NaN
-    pitchangle = asin((float)accelY/acc_total_vector)* 57.296;          //Calculate the pitch angle.
+  if(abs(acc_y) < acc_total_vector){                                        //Prevent the asin function to produce a NaN
+    angle_pitch_acc = asin((float)acc_y/acc_total_vector)* 57.296;          //Calculate the pitch angle.
   }
-  if(abs(accelX) < acc_total_vector){                                        //Prevent the asin function to produce a NaN
-    rollangle = asin((float)accelX/acc_total_vector)* -57.296;          //Calculate the roll angle.
+  if(abs(acc_x) < acc_total_vector){                                        //Prevent the asin function to produce a NaN
+    angle_roll_acc = asin((float)acc_x/acc_total_vector)* -57.296;          //Calculate the roll angle.
   }
 
 
@@ -207,6 +220,17 @@ void loop() {
     }
 
     if(esc_4 == 1500){
+
+      for(start = 0; start <= 35; start++)eeprom_data[start] = EEPROM.read(start);
+      gyro_address = eeprom_data[32];                                           //Store the gyro address in the variable.
+
+      //Check the EEPROM signature to make sure that the setup program is executed.
+      while(eeprom_data[33] != 'J' || eeprom_data[34] != 'M' || eeprom_data[35] != 'B')delay(10);
+
+      //The flight controller needs the MPU-6050 with gyro and accelerometer
+      //If setup is completed without MPU-6050 stop the flight controller program  
+      if(eeprom_data[31] == 2 || eeprom_data[31] == 3)delay(10);
+
       Serial.println("Calibrating Gyroscope......");
       for(cal_int=1;cal_int<=2000;cal_int++)
       { 
@@ -217,6 +241,9 @@ void loop() {
       }
       
       Serial.println("Calibration Done..!!!");
+
+
+
       gyro_x_cal /= 2000;
       gyro_y_cal /= 2000;
       gyro_z_cal /= 2000;
@@ -291,13 +318,13 @@ void loop() {
     esc_3 = throttle + pid_output_pitch - pid_output_roll - pid_output_yaw; //Calculate the pulse for esc 3 (rear-left - CCW)
     esc_4 = throttle - pid_output_pitch - pid_output_roll + pid_output_yaw; //Calculate the pulse for esc 4 (front-left - CW)
 
-/*
+
     if (battery_voltage < 1240 && battery_voltage > 800){                   //Is the battery connected?
       esc_1 += esc_1 * ((1240 - battery_voltage)/(float)3500);              //Compensate the esc-1 pulse for voltage drop.
       esc_2 += esc_2 * ((1240 - battery_voltage)/(float)3500);              //Compensate the esc-2 pulse for voltage drop.
       esc_3 += esc_3 * ((1240 - battery_voltage)/(float)3500);              //Compensate the esc-3 pulse for voltage drop.
       esc_4 += esc_4 * ((1240 - battery_voltage)/(float)3500);              //Compensate the esc-4 pulse for voltage drop.
-    } */
+    } 
 
     if (esc_1 < 1100) esc_1 = 1100;                                         //Keep the motors running.
     if (esc_2 < 1100) esc_2 = 1100;                                         //Keep the motors running.
@@ -312,17 +339,28 @@ void loop() {
 
 
 
-  Serial.print("EC4 (Front-Left):");
-  Serial.print(esc_4);
+  // Serial.print("EC4 (Front-Left):");
+  // Serial.print(esc_4);
+  // Serial.print(",");
+  // Serial.print("EC1 (Front-Right):");
+  // Serial.print(esc_1);
+  // Serial.print(",");
+  // Serial.print("EC3 (Back-Left):");
+  // Serial.print(esc_3);
+  // Serial.print(",");
+  // Serial.print("EC2 (Back-Right):");
+  // Serial.println(esc_2);
+  //---------
+  Serial.print("P:");
+  Serial.print(gyro_pitch_input);
   Serial.print(",");
-  Serial.print("EC1 (Front-Right):");
-  Serial.print(esc_1);
+  Serial.print("R:");
+  Serial.print(gyro_roll_input);
   Serial.print(",");
-  Serial.print("EC3 (Back-Left):");
-  Serial.print(esc_3);
-  Serial.print(",");
-  Serial.print("EC2 (Back-Right):");
-  Serial.println(esc_2);
+  Serial.print("Y:");
+  Serial.println(gyro_yaw_input);
+  //---------
+  
 
 
   //! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !
@@ -430,26 +468,40 @@ void setupMPU(){
 
 
 void recordRegisters() {
-  Wire.beginTransmission(0b1101000);                                         //I2C address of the MPU
-  Wire.write(0x3B);                                                          //Starting register for Accel Readings
-  Wire.endTransmission();
-  Wire.requestFrom(0b1101000,14);                                            //Request Accel Registers (3B - 40)
-  while(Wire.available() < 14);
-  accelX = Wire.read()<<8|Wire.read();                                       //Store first two bytes into accelX
-  accelY = Wire.read()<<8|Wire.read();                                       //Store middle two bytes into accelY
-  accelZ = Wire.read()<<8|Wire.read();                                       //Store last two bytes into accelZ
-  temperature=Wire.read()<<8|Wire.read();
-  gyroX = Wire.read()<<8|Wire.read();                                        //Store first two bytes into accelX
-  gyroY = Wire.read()<<8|Wire.read();                                        //Store middle two bytes into accelY
-  gyroZ = Wire.read()<<8|Wire.read();                                        //Store last two bytes into accelZ
+  if(eeprom_data[31] == 1){
+    Wire.beginTransmission(0b1101000);                                         //I2C address of the MPU
+    Wire.write(0x3B);                                                          //Starting register for Accel Readings
+    Wire.endTransmission();
+    Wire.requestFrom(0b1101000,14);                                            //Request Accel Registers (3B - 40)
+    while(Wire.available() < 14);                                           //Wait until the 14 bytes are received.
+    acc_axis[1] = Wire.read()<<8|Wire.read();                               //Add the low and high byte to the acc_x variable.
+    acc_axis[2] = Wire.read()<<8|Wire.read();                               //Add the low and high byte to the acc_y variable.
+    acc_axis[3] = Wire.read()<<8|Wire.read();                               //Add the low and high byte to the acc_z variable.
+    temperature = Wire.read()<<8|Wire.read();                               //Add the low and high byte to the temperature variable.
+    gyro_axis[1] = Wire.read()<<8|Wire.read();                              //Read high and low part of the angular data.
+    gyro_axis[2] = Wire.read()<<8|Wire.read();                              //Read high and low part of the angular data.
+    gyro_axis[3] = Wire.read()<<8|Wire.read();                              //Read high and low part of the angular data.
+  }                                  //Store last two bytes into accelZ
 
-  if(cal_int == 2000)
-  {
-    gyroX -= gyro_x_cal;
-    gyroY -= gyro_y_cal;
-    gyroZ -= gyro_z_cal;
+  if(cal_int == 2000){
+    gyro_axis[1] -= gyro_axis_cal[1];                                       //Only compensate after the calibration.
+    gyro_axis[2] -= gyro_axis_cal[2];                                       //Only compensate after the calibration.
+    gyro_axis[3] -= gyro_axis_cal[3];                                       //Only compensate after the calibration.
   }
+  
+  gyro_roll = gyro_axis[eeprom_data[28] & 0b00000011];                      //Set gyro_roll to the correct axis that was stored in the EEPROM.
+  if(eeprom_data[28] & 0b10000000)gyro_roll *= -1;                          //Invert gyro_roll if the MSB of EEPROM bit 28 is set.
+  gyro_pitch = gyro_axis[eeprom_data[29] & 0b00000011];                     //Set gyro_pitch to the correct axis that was stored in the EEPROM.
+  if(eeprom_data[29] & 0b10000000)gyro_pitch *= -1;                         //Invert gyro_pitch if the MSB of EEPROM bit 29 is set.
+  gyro_yaw = gyro_axis[eeprom_data[30] & 0b00000011];                       //Set gyro_yaw to the correct axis that was stored in the EEPROM.
+  if(eeprom_data[30] & 0b10000000)gyro_yaw *= -1;                           //Invert gyro_yaw if the MSB of EEPROM bit 30 is set.
 
+  acc_x = acc_axis[eeprom_data[29] & 0b00000011];                           //Set acc_x to the correct axis that was stored in the EEPROM.
+  if(eeprom_data[29] & 0b10000000)acc_x *= -1;                              //Invert acc_x if the MSB of EEPROM bit 29 is set.
+  acc_y = acc_axis[eeprom_data[28] & 0b00000011];                           //Set acc_y to the correct axis that was stored in the EEPROM.
+  if(eeprom_data[28] & 0b10000000)acc_y *= -1;                              //Invert acc_y if the MSB of EEPROM bit 28 is set.
+  acc_z = acc_axis[eeprom_data[30] & 0b00000011];                           //Set acc_z to the correct axis that was stored in the EEPROM.
+  if(eeprom_data[30] & 0b10000000)acc_z *= -1;                              //Invert acc_z if the MSB of EEPROM bit 30 is set.
   
   // Valores hardcodeados del mando (valores van de 1000 a 2000), simulamos que los joysticks estan en medio
   receiver_input_channel_1 = 1500;//convert_receiver_channel(1);                 //Convert the actual receiver signals for pitch to the standard 1000 - 2000us.
